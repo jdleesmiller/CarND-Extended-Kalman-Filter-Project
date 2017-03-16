@@ -151,6 +151,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     ekf_.R_ = R_radar_;
     double phi = atan2(ekf_.x_(1), ekf_.x_(0));
     double rho = norm(ekf_.x_(0), ekf_.x_(1));
+    if (abs(rho) < 1e-9) {
+      return;
+    }
     double rho_dot = (ekf_.x_(0) * ekf_.x_(2) + ekf_.x_(1) * ekf_.x_(3)) / rho;
     VectorXd h(3);
     h << rho, phi, rho_dot;

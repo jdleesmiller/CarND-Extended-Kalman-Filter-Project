@@ -61,9 +61,9 @@ public:
   /**
    * Updates the state by using Extended Kalman Filter equations
    * @param z The measurement at k+1
+   * @param h The projected measurement from the state, h(x)
    */
-  void UpdateEKF(const Eigen::VectorXd &z);
-
+  void UpdateEKF(const Eigen::VectorXd &z, const Eigen::VectorXd &h);
 };
 
 #endif /* KALMAN_FILTER_H_ */

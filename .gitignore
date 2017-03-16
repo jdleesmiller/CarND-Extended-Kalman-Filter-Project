@@ -12,3 +12,5 @@ CMakeFiles
 CMakeCache.txt
 ExtendedKF
 Makefile
+
+data/output*

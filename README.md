@@ -2,6 +2,13 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## Notes
+
+### Avoid explicitly inverting S to find the Kalman gain
+
+Instead, use LU solve. This should be more numerically stable.
+Interestingly, it also seems to improve performance by 5%-10% on dataset 1,
+even though Eigen has formulae for inversion of 2x2 and 3x3 matrices.
 
 ## Dependencies
 

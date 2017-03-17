@@ -1,4 +1,5 @@
 #include "kalman_filter.h"
+#include "Eigen/LU"
 
 #include <iostream>
 
@@ -32,12 +33,19 @@ void KalmanFilter::Update(const VectorXd &z) {
 
 void KalmanFilter::UpdateEKF(const VectorXd &z, const VectorXd &h) {
   // MINE
-  std::cout << "z=" << z << std::endl;
-  std::cout << "h=" << h << std::endl;
   VectorXd y = z - h;
   MatrixXd S = H_ * P_ * H_.transpose() + R_;
-  MatrixXd K = P_ * H_.transpose() * S.inverse();
   MatrixXd I = MatrixXd::Identity(x_.size(), x_.size());
+
+  // Avoid explicit matrix inversion. Starting from
+  // K = P H^T S^-1
+  // postmultiply by S to get
+  // K S = P H^T
+  // which is equivalent to
+  // S^T K^T = H P^T
+  // which is in standard form (Ax=B)
+  Eigen::FullPivLU<MatrixXd> lu(S.transpose());
+  MatrixXd K = lu.solve(H_ * P_.transpose()).transpose();
 
   x_ = x_ + K * y;
   P_ = (I - K * H_) * P_;

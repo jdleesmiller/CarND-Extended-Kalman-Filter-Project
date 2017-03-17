@@ -4,6 +4,17 @@ Self-Driving Car Engineer Nanodegree Program
 ---
 ## Notes
 
+RMSEs:
+0.0651649
+0.0605378
+  0.54319
+ 0.544191
+
+0.185496
+0.190302
+0.476754
+0.804469
+
 ### Avoid explicitly inverting S to find the Kalman gain
 
 Instead, use LU solve. This should be more numerically stable.

@@ -44,6 +44,12 @@ private:
   Eigen::MatrixXd R_radar_;
   Eigen::MatrixXd H_laser_;
   Eigen::MatrixXd Hj_;
+
+  void Initialize(const MeasurementPackage &measurement_pack);
+  void Predict(const MeasurementPackage &measurement_pack);
+  void Update(const MeasurementPackage &measurement_pack);
+  void UpdateWithRadar(const MeasurementPackage &measurement_pack);
+  void UpdateWithLaser(const MeasurementPackage &measurement_pack);
 };
 
 #endif /* FusionEKF_H_ */

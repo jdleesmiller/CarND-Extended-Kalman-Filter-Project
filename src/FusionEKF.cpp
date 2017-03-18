@@ -15,14 +15,33 @@ const double EPSILON = 1e-6;
 const double NOISE_AX = 9;
 const double NOISE_AY = 9;
 
-FusionEKF::Radar::Radar(FusionEKF::Filter &filter) :
-  FusionEKF::Filter::Sensor<3>(filter)
-{
+FusionEKF::Radar::Radar(FusionEKF::Filter &filter) : Filter::Sensor<3>(filter) {
   // Measurement covariance matrix:
   R_ <<
     0.09, 0, 0,
     0, 0.0009, 0,
     0, 0, 0.09;
+}
+
+void FusionEKF::Radar::Initialize(const MeasurementVector &z) {
+  double rho = z(0);
+  double phi = z(1);
+  // double rho_dot = z(2); TODO: it seems like we should be able to use this...
+
+  double px = rho * cos(phi);
+  double py = rho * sin(phi);
+
+  Filter::StateVector x;
+  x << px, py, 0, 0;
+
+  Filter::StateMatrix P;
+  P <<
+        1,     0,    0,    0,
+        0,     1,    0,    0,
+        0,     0, 1000,    0,
+        0,     0,    0, 1000;
+
+  filter_.Initialize(x, P);
 }
 
 void FusionEKF::Radar::Update(const MeasurementVector &z) {
@@ -44,9 +63,7 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
   FusionEKF::Filter::Sensor<3>::UpdateEKF(z, h, H, R_);
 }
 
-FusionEKF::Laser::Laser(FusionEKF::Filter &filter)
-  : FusionEKF::Filter::Sensor<2>(filter)
-{
+FusionEKF::Laser::Laser(FusionEKF::Filter &filter) : Filter::Sensor<2>(filter) {
   // Measurement covariance matrix:
   R_ <<
     0.0225, 0,
@@ -58,8 +75,24 @@ FusionEKF::Laser::Laser(FusionEKF::Filter &filter)
     0, 1, 0, 0;
 }
 
+void FusionEKF::Laser::Initialize(const MeasurementVector &z) {
+  Filter::StateVector x;
+  x << z(0), z(1), 0, 0;
+
+  Filter::StateMatrix P;
+  P <<
+    // R_(0),     0,    0,    0,
+    //     0, R_(1),    0,    0,
+        1,     0,    0,    0,
+        0,     1,    0,    0,
+        0,     0, 1000,    0,
+        0,     0,    0, 1000;
+
+  filter_.Initialize(x, P);
+}
+
 void FusionEKF::Laser::Update(const MeasurementVector &z) {
-  FusionEKF::Filter::Sensor<2>::Update(z, H_, R_);
+  Filter::Sensor<2>::Update(z, H_, R_);
 }
 
 /*
@@ -83,36 +116,18 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
     * Initialize the state ekf_.x_ with the first measurement.
     * Create the covariance matrix.
   */
-  double rho, phi, px, py;
   switch (measurement_pack.sensor_type_) {
     case MeasurementPackage::RADAR:
-      // Convert radar from polar to cartesian coordinates.
-      rho = measurement_pack.raw_measurements_(0);
-      phi = measurement_pack.raw_measurements_(1);
-      px = rho * cos(phi);
-      py = rho * sin(phi);
+      radar_.Initialize(measurement_pack.raw_measurements_);
       break;
     case MeasurementPackage::LASER:
-      px = measurement_pack.raw_measurements_(0);
-      py = measurement_pack.raw_measurements_(1);
+      laser_.Initialize(measurement_pack.raw_measurements_);
       break;
     default:
       cerr << "bad measurement pack sensor type " <<
         measurement_pack.sensor_type_ << endl;
       exit(EXIT_FAILURE);
   }
-
-  Filter::StateVector x;
-  x << px, py, 0, 0;
-
-  Filter::StateMatrix P;
-	P <<
-    1, 0,    0,    0,
-	  0, 1,    0,    0,
-	  0, 0, 1000,    0,
-	  0, 0,    0, 1000;
-
-  ekf_.Initialize(x, P);
 }
 
 void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {

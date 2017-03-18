@@ -36,9 +36,14 @@ public:
 private:
   typedef KalmanFilter<4> Filter;
 
-  struct Radar : public Filter::Sensor<3> {
+  struct Radar : public Filter::Sensor<3>
+  {
     explicit Radar(Filter &filter);
+
+    void Initialize(const MeasurementVector &z);
+
     void Update(const MeasurementVector &z);
+
   private:
     // Measurement covariance matrix for radar
     MeasurementMatrix R_;
@@ -47,9 +52,14 @@ private:
     Tools tools;
   };
 
-  struct Laser : public Filter::Sensor<2> {
+  struct Laser : public Filter::Sensor<2>
+  {
     explicit Laser(Filter &filter);
+
+    void Initialize(const MeasurementVector &z);
+
     void Update(const MeasurementVector &z);
+
   private:
     // Measurement covariance matrix for laser
     MeasurementMatrix R_;

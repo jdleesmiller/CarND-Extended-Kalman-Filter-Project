@@ -8,6 +8,13 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using std::vector;
 
+// Tolerance for avoiding division by zero.
+const double EPSILON = 1e-6;
+
+// Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
+const double NOISE_AX = 9;
+const double NOISE_AY = 9;
+
 /*
  * Constructor.
  */
@@ -85,7 +92,6 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
 void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
   /**
    * Update the state transition matrix F according to the new elapsed time.
-   * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
   // Get elapsed time in seconds (from microseconds).
   double dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1e6;
@@ -99,14 +105,12 @@ void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
 	double dt2 = dt * dt;
 	double dt3 = dt2 * dt / 2.0f;
 	double dt4 = dt2 * dt2 / 4.0f;
-  double noise_ax = 9;
-  double noise_ay = 9;
 	ekf_.Q_ = MatrixXd(4, 4);
 	ekf_.Q_ <<
-	  dt4 * noise_ax,              0, dt3 * noise_ax,              0,
-	               0, dt4 * noise_ay,              0, dt3 * noise_ay,
-	  dt3 * noise_ax,              0, dt2 * noise_ax,              0,
-	               0, dt3 * noise_ay,              0, dt2 * noise_ay;
+	  dt4 * NOISE_AX,              0, dt3 * NOISE_AX,              0,
+	               0, dt4 * NOISE_AY,              0, dt3 * NOISE_AY,
+	  dt3 * NOISE_AX,              0, dt2 * NOISE_AX,              0,
+	               0, dt3 * NOISE_AY,              0, dt2 * NOISE_AY;
 
   ekf_.Predict();
 }
@@ -140,7 +144,7 @@ void FusionEKF::UpdateWithRadar(const MeasurementPackage &measurement_pack) {
   double vy = ekf_.x_(3);
   double phi = atan2(py, px);
   double rho = sqrt(px*px + py*py);
-  if (abs(rho) < 1e-9) {
+  if (abs(rho) < EPSILON) {
     return;
   }
   double rho_dot = (px * vx + py * vy) / rho;

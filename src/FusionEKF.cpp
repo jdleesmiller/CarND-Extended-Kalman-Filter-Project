@@ -41,7 +41,6 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
   Eigen::Vector3d h;
   h << rho, phi, rho_dot;
   MeasurementStateMatrix H = tools.CalculateJacobian(x);
-  cout << "H" << endl << H << endl;
   FusionEKF::Filter::Sensor<3>::UpdateEKF(z, h, H, R_);
 }
 
@@ -124,7 +123,6 @@ void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
   double dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1e6;
 
   //1. Modify the F matrix so that the time is integrated
-  cout << "dt=" << dt << endl;
   F_(0, 2) = dt;
   F_(1, 3) = dt;
 

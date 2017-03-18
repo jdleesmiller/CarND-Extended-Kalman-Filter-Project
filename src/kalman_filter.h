@@ -1,8 +1,6 @@
 #ifndef KALMAN_FILTER_H_
 #define KALMAN_FILTER_H_
 
-#include <iostream> // TODO REMOVE
-
 #include "Eigen/Dense"
 #include "Eigen/LU"
 
@@ -79,7 +77,6 @@ struct KalmanFilter {
 
   void Update(const StateVector &Ky, const StateMatrix &KH) {
     x_ = x_ + Ky;
-    std::cout << "I" << std::endl << I_ << std::endl;
     P_ = (I_ - KH) * P_;
   }
 

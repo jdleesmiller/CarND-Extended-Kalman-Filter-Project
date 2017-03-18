@@ -52,7 +52,7 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
     * Initialize the state ekf_.x_ with the first measurement.
     * Create the covariance matrix.
   */
-  float rho, phi, x, y;
+  double rho, phi, x, y;
   switch (measurement_pack.sensor_type_) {
     case MeasurementPackage::RADAR:
       // Convert radar from polar to cartesian coordinates.
@@ -88,7 +88,7 @@ void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
    * Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
    */
   // Get elapsed time in seconds (from microseconds).
-  float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1e6;
+  double dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1e6;
 
   //1. Modify the F matrix so that the time is integrated
   cout << "dt=" << dt << endl;
@@ -96,11 +96,11 @@ void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
   ekf_.F_(1, 3) = dt;
 
 	//2. Set the process covariance matrix Q
-	float dt2 = dt * dt;
-	float dt3 = dt2 * dt / 2.0f;
-	float dt4 = dt2 * dt2 / 4.0f;
-  float noise_ax = 9;
-  float noise_ay = 9;
+	double dt2 = dt * dt;
+	double dt3 = dt2 * dt / 2.0f;
+	double dt4 = dt2 * dt2 / 4.0f;
+  double noise_ax = 9;
+  double noise_ay = 9;
 	ekf_.Q_ = MatrixXd(4, 4);
 	ekf_.Q_ <<
 	  dt4 * noise_ax,              0, dt3 * noise_ax,              0,
@@ -134,10 +134,10 @@ void FusionEKF::UpdateWithRadar(const MeasurementPackage &measurement_pack) {
   ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
   ekf_.R_ = R_radar_;
 
-  float px = ekf_.x_(0);
-  float py = ekf_.x_(1);
-  float vx = ekf_.x_(2);
-  float vy = ekf_.x_(3);
+  double px = ekf_.x_(0);
+  double py = ekf_.x_(1);
+  double vx = ekf_.x_(2);
+  double vy = ekf_.x_(3);
   double phi = atan2(py, px);
   double rho = sqrt(px*px + py*py);
   if (abs(rho) < 1e-9) {

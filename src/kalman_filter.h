@@ -1,69 +1,97 @@
 #ifndef KALMAN_FILTER_H_
 #define KALMAN_FILTER_H_
+
+#include <iostream> // TODO REMOVE
+
 #include "Eigen/Dense"
+#include "Eigen/LU"
 
-class KalmanFilter {
-public:
+template <int StateSize>
+struct KalmanFilter {
+  typedef Eigen::Matrix<double, StateSize, 1> StateVector;
+  typedef Eigen::Matrix<double, StateSize, StateSize> StateMatrix;
 
-  // state vector
-  Eigen::VectorXd x_;
+  template <int MeasurementSize>
+  struct Sensor {
+    typedef Eigen::Matrix<double, MeasurementSize, 1> MeasurementVector;
+    typedef Eigen::Matrix<double, MeasurementSize, MeasurementSize>
+      MeasurementMatrix;
+    typedef Eigen::Matrix<double, MeasurementSize, StateSize>
+      MeasurementStateMatrix;
+    typedef Eigen::Matrix<double, StateSize, MeasurementSize>
+      StateMeasurementMatrix;
 
-  // state covariance matrix
-  Eigen::MatrixXd P_;
+    Sensor(KalmanFilter<StateSize> &filter) : filter_(filter) { }
 
-  // state transistion matrix
-  Eigen::MatrixXd F_;
+    void Update(
+      const MeasurementVector &z,
+      const MeasurementStateMatrix &H,
+      const MeasurementMatrix &R) {
+      UpdateEKF(z, H * filter_.state(), H, R);
+    }
 
-  // process covariance matrix
-  Eigen::MatrixXd Q_;
+    void UpdateEKF(
+      const MeasurementVector &z,
+      const MeasurementVector &h,
+      const MeasurementStateMatrix &H,
+      const MeasurementMatrix &R)
+    {
+      const StateMatrix &P = filter_.covariance();
+      MeasurementVector y = z - h;
+      MeasurementMatrix S = H * P * H.transpose() + R;
 
-  // measurement matrix
-  Eigen::MatrixXd H_;
+      // Avoid explicit matrix inversion. Starting from
+      // K = P H^T S^-1
+      // postmultiply by S to get
+      // K S = P H^T
+      // which is equivalent to
+      // S^T K^T = H P^T
+      // which is in standard form (Ax=B)
+      Eigen::FullPivLU<MeasurementMatrix> lu(S.transpose());
+      StateMeasurementMatrix K = lu.solve(H * P.transpose()).transpose();
 
-  // measurement covariance matrix
-  Eigen::MatrixXd R_;
+      filter_.Update(K * y, K * H);
+    }
 
-  /**
-   * Constructor
-   */
-  KalmanFilter();
+  protected:
+    KalmanFilter<StateSize> &filter_;
+  };
 
-  /**
-   * Destructor
-   */
-  virtual ~KalmanFilter();
+  KalmanFilter() : KalmanFilter(StateVector(), StateMatrix()) {}
 
-  /**
-   * Init Initializes Kalman filter
-   * @param x_in Initial state
-   * @param P_in Initial state covariance
-   * @param F_in Transition matrix
-   * @param H_in Measurement matrix
-   * @param R_in Measurement covariance matrix
-   * @param Q_in Process covariance matrix
-   */
-  void Init(Eigen::VectorXd &x_in, Eigen::MatrixXd &P_in, Eigen::MatrixXd &F_in,
-      Eigen::MatrixXd &H_in, Eigen::MatrixXd &R_in, Eigen::MatrixXd &Q_in);
+  KalmanFilter(const StateVector &x, const StateMatrix &P)
+    : I_(StateMatrix::Identity()), x_(x), P_(P)
+  { }
 
-  /**
-   * Prediction Predicts the state and the state covariance
-   * using the process model
-   * @param delta_T Time between k and k+1 in s
-   */
-  void Predict();
+  const StateVector &state() const { return x_; }
 
-  /**
-   * Updates the state by using standard Kalman Filter equations
-   * @param z The measurement at k+1
-   */
-  void Update(const Eigen::VectorXd &z);
+  const StateMatrix &covariance() const { return P_; }
 
-  /**
-   * Updates the state by using Extended Kalman Filter equations
-   * @param z The measurement at k+1
-   * @param h The projected measurement from the state, h(x)
-   */
-  void UpdateEKF(const Eigen::VectorXd &z, const Eigen::VectorXd &h);
+  void Predict(const StateMatrix &F, const StateMatrix &Q) {
+    x_ = F * x_;
+    P_ = F * P_ * F.transpose() + Q;
+  }
+
+  void Initialize(const StateVector &x, const StateMatrix &P) {
+    x_ = x;
+    P_ = P;
+  }
+
+  void Update(const StateVector &Ky, const StateMatrix &KH) {
+    x_ = x_ + Ky;
+    std::cout << "I" << std::endl << I_ << std::endl;
+    P_ = (I_ - KH) * P_;
+  }
+
+private:
+  // Identity matrix (for Update)
+  StateMatrix I_;
+
+  // State vector
+  StateVector x_;
+
+  // State covariance matrix
+  StateMatrix P_;
 };
 
 #endif /* KALMAN_FILTER_H_ */

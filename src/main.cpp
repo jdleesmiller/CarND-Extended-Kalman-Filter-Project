@@ -139,10 +139,10 @@ int main(int argc, char* argv[]) {
     fusionEKF.ProcessMeasurement(measurement_pack_list[k]);
 
     // output the estimation
-    out_file_ << fusionEKF.ekf_.x_(0) << "\t";
-    out_file_ << fusionEKF.ekf_.x_(1) << "\t";
-    out_file_ << fusionEKF.ekf_.x_(2) << "\t";
-    out_file_ << fusionEKF.ekf_.x_(3) << "\t";
+    out_file_ << fusionEKF.px() << "\t";
+    out_file_ << fusionEKF.py() << "\t";
+    out_file_ << fusionEKF.vx() << "\t";
+    out_file_ << fusionEKF.vy() << "\t";
 
     // output the measurements
     if (measurement_pack_list[k].sensor_type_ == MeasurementPackage::LASER) {
@@ -163,7 +163,7 @@ int main(int argc, char* argv[]) {
     out_file_ << gt_pack_list[k].gt_values_(2) << "\t";
     out_file_ << gt_pack_list[k].gt_values_(3) << "\n";
 
-    estimations.push_back(fusionEKF.ekf_.x_);
+    estimations.push_back(fusionEKF.state());
     ground_truth.push_back(gt_pack_list[k].gt_values_);
   }
 

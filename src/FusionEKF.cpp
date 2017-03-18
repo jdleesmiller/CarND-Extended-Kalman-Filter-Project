@@ -15,39 +15,64 @@ const double EPSILON = 1e-6;
 const double NOISE_AX = 9;
 const double NOISE_AY = 9;
 
-/*
- * Constructor.
- */
-FusionEKF::FusionEKF() {
-  is_initialized_ = false;
+FusionEKF::Radar::Radar(FusionEKF::Filter &filter) :
+  FusionEKF::Filter::Sensor<3>(filter)
+{
+  // Measurement covariance matrix:
+  R_ <<
+    0.09, 0, 0,
+    0, 0.0009, 0,
+    0, 0, 0.09;
+}
 
-  previous_timestamp_ = 0;
+void FusionEKF::Radar::Update(const MeasurementVector &z) {
+  const Filter::StateVector &x = filter_.state();
 
-  // initializing matrices
-  R_laser_ = MatrixXd(2, 2);
-  R_radar_ = MatrixXd(3, 3);
-  H_laser_ = MatrixXd(2, 4);
-  Hj_ = MatrixXd(3, 4);
+  double px = x(0);
+  double py = x(1);
+  double vx = x(2);
+  double vy = x(3);
+  double phi = atan2(py, px);
+  double rho = sqrt(px*px + py*py);
+  if (abs(rho) < EPSILON) {
+    return;
+  }
+  double rho_dot = (px * vx + py * vy) / rho;
+  Eigen::Vector3d h;
+  h << rho, phi, rho_dot;
+  MeasurementStateMatrix H = tools.CalculateJacobian(x);
+  cout << "H" << endl << H << endl;
+  FusionEKF::Filter::Sensor<3>::UpdateEKF(z, h, H, R_);
+}
 
-  //measurement covariance matrix - laser
-  R_laser_ << 0.0225, 0,
-        0, 0.0225;
+FusionEKF::Laser::Laser(FusionEKF::Filter &filter)
+  : FusionEKF::Filter::Sensor<2>(filter)
+{
+  // Measurement covariance matrix:
+  R_ <<
+    0.0225, 0,
+    0, 0.0225;
 
-  //measurement covariance matrix - radar
-  R_radar_ << 0.09, 0, 0,
-        0, 0.0009, 0,
-        0, 0, 0.09;
-
-  /**
-    * Finish initializing the FusionEKF.
-    * Set the process and measurement noises
-  */
-  ekf_.F_ = MatrixXd::Identity(4, 4); // transition (dt values updated later)
-
-  H_laser_ <<
+  // Measurement matrix:
+  H_ <<
     1, 0, 0, 0,
     0, 1, 0, 0;
 }
+
+void FusionEKF::Laser::Update(const MeasurementVector &z) {
+  FusionEKF::Filter::Sensor<2>::Update(z, H_, R_);
+}
+
+/*
+ * Constructor.
+ */
+FusionEKF::FusionEKF() :
+  is_initialized_(false),
+  previous_timestamp_(0),
+  radar_(ekf_),
+  laser_(ekf_),
+  F_(Eigen::Matrix4d::Identity())  // transition matrix (dt terms added later)
+{ }
 
 /**
 * Destructor.
@@ -59,18 +84,18 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
     * Initialize the state ekf_.x_ with the first measurement.
     * Create the covariance matrix.
   */
-  double rho, phi, x, y;
+  double rho, phi, px, py;
   switch (measurement_pack.sensor_type_) {
     case MeasurementPackage::RADAR:
       // Convert radar from polar to cartesian coordinates.
       rho = measurement_pack.raw_measurements_(0);
       phi = measurement_pack.raw_measurements_(1);
-      x = rho * cos(phi);
-      y = rho * sin(phi);
+      px = rho * cos(phi);
+      py = rho * sin(phi);
       break;
     case MeasurementPackage::LASER:
-      x = measurement_pack.raw_measurements_(0);
-      y = measurement_pack.raw_measurements_(1);
+      px = measurement_pack.raw_measurements_(0);
+      py = measurement_pack.raw_measurements_(1);
       break;
     default:
       cerr << "bad measurement pack sensor type " <<
@@ -78,15 +103,17 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
       exit(EXIT_FAILURE);
   }
 
-  ekf_.x_ = VectorXd(4);
-  ekf_.x_ << x, y, 0, 0;
+  Filter::StateVector x;
+  x << px, py, 0, 0;
 
-  ekf_.P_ = MatrixXd(4, 4);
-	ekf_.P_ <<
+  Filter::StateMatrix P;
+	P <<
     1, 0,    0,    0,
 	  0, 1,    0,    0,
 	  0, 0, 1000,    0,
 	  0, 0,    0, 1000;
+
+  ekf_.Initialize(x, P);
 }
 
 void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
@@ -98,21 +125,20 @@ void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
 
   //1. Modify the F matrix so that the time is integrated
   cout << "dt=" << dt << endl;
-  ekf_.F_(0, 2) = dt;
-  ekf_.F_(1, 3) = dt;
+  F_(0, 2) = dt;
+  F_(1, 3) = dt;
 
 	//2. Set the process covariance matrix Q
 	double dt2 = dt * dt;
 	double dt3 = dt2 * dt / 2.0f;
 	double dt4 = dt2 * dt2 / 4.0f;
-	ekf_.Q_ = MatrixXd(4, 4);
-	ekf_.Q_ <<
+	Q_ <<
 	  dt4 * NOISE_AX,              0, dt3 * NOISE_AX,              0,
 	               0, dt4 * NOISE_AY,              0, dt3 * NOISE_AY,
 	  dt3 * NOISE_AX,              0, dt2 * NOISE_AX,              0,
 	               0, dt3 * NOISE_AY,              0, dt2 * NOISE_AY;
 
-  ekf_.Predict();
+  ekf_.Predict(F_, Q_);
 }
 
 void FusionEKF::Update(const MeasurementPackage &measurement_pack) {
@@ -122,42 +148,16 @@ void FusionEKF::Update(const MeasurementPackage &measurement_pack) {
    */
   switch(measurement_pack.sensor_type_) {
     case MeasurementPackage::RADAR:
-      UpdateWithRadar(measurement_pack);
+      radar_.Update(measurement_pack.raw_measurements_);
     break;
     case MeasurementPackage::LASER:
-      UpdateWithLaser(measurement_pack);
+      laser_.Update(measurement_pack.raw_measurements_);
       break;
     default:
       cerr << "bad measurement pack sensor type " <<
         measurement_pack.sensor_type_ << endl;
       exit(EXIT_FAILURE);
   }
-}
-
-void FusionEKF::UpdateWithRadar(const MeasurementPackage &measurement_pack) {
-  ekf_.H_ = tools.CalculateJacobian(ekf_.x_);
-  ekf_.R_ = R_radar_;
-
-  double px = ekf_.x_(0);
-  double py = ekf_.x_(1);
-  double vx = ekf_.x_(2);
-  double vy = ekf_.x_(3);
-  double phi = atan2(py, px);
-  double rho = sqrt(px*px + py*py);
-  if (abs(rho) < EPSILON) {
-    return;
-  }
-  double rho_dot = (px * vx + py * vy) / rho;
-  VectorXd h(3);
-  h << rho, phi, rho_dot;
-
-  ekf_.UpdateEKF(measurement_pack.raw_measurements_, h);
-}
-
-void FusionEKF::UpdateWithLaser(const MeasurementPackage &measurement_pack) {
-  ekf_.H_ = H_laser_;
-  ekf_.R_ = R_laser_;
-  ekf_.Update(measurement_pack.raw_measurements_);
 }
 
 void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
@@ -172,6 +172,6 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
 
   previous_timestamp_ = measurement_pack.timestamp_;
 
-  cout << "x_ = " << endl << ekf_.x_ << endl;
-  cout << "P_ = " << endl << ekf_.P_ << endl;
+  cout << "x_ = " << endl << ekf_.state() << endl;
+  cout << "P_ = " << endl << ekf_.covariance() << endl;
 }

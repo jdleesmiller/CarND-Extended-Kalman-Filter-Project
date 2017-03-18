@@ -26,30 +26,57 @@ public:
   */
   void ProcessMeasurement(const MeasurementPackage &measurement_pack);
 
-  /**
-  * Kalman Filter update and prediction math lives in here.
-  */
-  KalmanFilter ekf_;
+  // State accessors:
+  const Eigen::Vector4d &state() const { return ekf_.state(); }
+  double px() const { return state()(0); }
+  double py() const { return state()(1); }
+  double vx() const { return state()(2); }
+  double vy() const { return state()(3); }
 
 private:
+  typedef KalmanFilter<4> Filter;
+
+  struct Radar : public Filter::Sensor<3> {
+    explicit Radar(Filter &filter);
+    void Update(const MeasurementVector &z);
+  private:
+    // Measurement covariance matrix for radar
+    MeasurementMatrix R_;
+
+    // tool object used to compute Jacobian and RMSE
+    Tools tools;
+  };
+
+  struct Laser : public Filter::Sensor<2> {
+    explicit Laser(Filter &filter);
+    void Update(const MeasurementVector &z);
+  private:
+    // Measurement covariance matrix for laser
+    MeasurementMatrix R_;
+
+    // Measurement matrix for laser
+    MeasurementStateMatrix H_;
+  };
+
   // check whether the tracking toolbox was initiallized or not (first measurement)
   bool is_initialized_;
 
   // previous timestamp
   long previous_timestamp_;
 
-  // tool object used to compute Jacobian and RMSE
-  Tools tools;
-  Eigen::MatrixXd R_laser_;
-  Eigen::MatrixXd R_radar_;
-  Eigen::MatrixXd H_laser_;
-  Eigen::MatrixXd Hj_;
+  Filter ekf_;
+  Radar radar_;
+  Laser laser_;
+
+  // state transistion matrix
+  Eigen::Matrix4d F_;
+
+  // process covariance matrix
+  Eigen::Matrix4d Q_;
 
   void Initialize(const MeasurementPackage &measurement_pack);
   void Predict(const MeasurementPackage &measurement_pack);
   void Update(const MeasurementPackage &measurement_pack);
-  void UpdateWithRadar(const MeasurementPackage &measurement_pack);
-  void UpdateWithLaser(const MeasurementPackage &measurement_pack);
 };
 
 #endif /* FusionEKF_H_ */

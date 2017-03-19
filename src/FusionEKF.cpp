@@ -21,6 +21,11 @@ FusionEKF::Radar::Radar(FusionEKF::Filter &filter) : Filter::Sensor<3>(filter) {
     0.09, 0, 0,
     0, 0.0009, 0,
     0, 0, 0.09;
+
+  // Approximate measurement matrix:
+  // approximations
+  // so just set it to zero (i.e. ignore measurements).
+  Hj_ = MeasurementStateMatrix::Zero();
 }
 
 void FusionEKF::Radar::Initialize(const MeasurementVector &z) {
@@ -51,16 +56,34 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
   double py = x(1);
   double vx = x(2);
   double vy = x(3);
+
+  // Project the current state into measurement space using the nonlinear 'h'.
   double phi = atan2(py, px);
   double rho = sqrt(px*px + py*py);
+  // Check division by zero: ignore the measurement.
   if (abs(rho) < EPSILON) {
     return;
   }
   double rho_dot = (px * vx + py * vy) / rho;
   Eigen::Vector3d h;
   h << rho, phi, rho_dot;
-  MeasurementStateMatrix H = tools.CalculateJacobian(x);
-  FusionEKF::Filter::Sensor<3>::UpdateEKF(z, h, H, R_);
+
+  // Calculate the linearized projection H for calculating the Kalman gain and
+  // updating the covariance.
+  double hp = px * px + py * py;
+  double dp = sqrt(hp);
+  double p32 = dp * hp;
+  double c = vx * py - vy * px;
+  // Check division by zero: ignore the measurement.
+  if (abs(hp) < EPSILON) {
+    return;
+  }
+  Hj_ <<
+           px / dp,       py / dp,       0,       0,
+          -py / hp,       px / hp,       0,       0,
+      py * c / p32, -px * c / p32, px / dp, py / dp;
+
+  FusionEKF::Filter::Sensor<3>::UpdateEKF(z, h, Hj_, R_);
 }
 
 FusionEKF::Laser::Laser(FusionEKF::Filter &filter) : Filter::Sensor<2>(filter) {

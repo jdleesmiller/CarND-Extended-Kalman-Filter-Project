@@ -48,8 +48,8 @@ private:
     // Measurement covariance matrix for radar
     MeasurementMatrix R_;
 
-    // tool object used to compute Jacobian and RMSE
-    Tools tools;
+    // Approximate measurement matrix for radar
+    MeasurementStateMatrix Hj_;
   };
 
   struct Laser : public Filter::Sensor<2>

@@ -2,6 +2,17 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+
+## Results
+
+### Dataset 1
+
+![output/output-1.png](Output for dataset 1)
+
+### Dataset 2
+
+![output/output-2.png](Output for dataset 1)
+
 ## Notes
 
 I made a few changes after getting the original code working, as detailed below.
@@ -48,14 +59,14 @@ However, this did not work, for several reasons:
 
 To work around both problems, we can take the position from the first measurement, use it to initialise `Hj`, and then run an otherwise-normal update. This approach seems to work quite well. For example, the first measurement in dataset 1 is
 ```
-rho=8.46642 phi=0.0287602	rho_dot=-3.04035
+rho=8.46642 phi=0.0287602 rho_dot=-3.04035
 ```
 which means that the obstacle is near the positive x axis and moving toward the origin at 3m/s. If we use `rho` and `phi` to find the position (and set the initial `vx` and `vy` to zero) to use in the calculation of the initial `Hj`, the state covariance matrix (`P`) after updating with the first measurement is:
 ```
-0.0899708 0.000732516           0           0
-0.000732516   0.0645292           0           0
-        0           0    0.110276   -0.716031
-        0           0   -0.716031     24.9794
+  0.0899708  0.000732516           0           0
+0.000732516    0.0645292           0           0
+          0            0    0.110276   -0.716031
+          0            0   -0.716031     24.9794
 ```
 The lower right block gives a Gaussian with little uncertainty in the x direction (constrained by the measurement) and essentially unchanged uncertainty in the y direction (the prior velocity variance was 25). The negative covariance terms tilt the Gaussian slightly, perpendicular to the radial with angle `phi`.
 
@@ -143,31 +154,3 @@ cmake and make!
 More information is only accessible by people who are already enrolled in Term 2
 of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/12dd29d8-2755-4b1b-8e03-e8f16796bea8)
 for instructions and the project rubric.
-
-## Hints!
-
-* You don't have to follow this directory structure, but if you do, your work
-  will span all of the .cpp files here. Keep an eye out for TODOs.
-
-## Call for IDE Profiles Pull Requests
-
-Help your fellow students!
-
-We decided to create Makefiles with cmake to keep this project as platform
-agnostic as possible. Similarly, we omitted IDE profiles in order to we ensure
-that students don't feel pressured to use one IDE or another.
-
-However! We'd love to help people get up and running with their IDEs of choice.
-If you've created a profile for an IDE that you think other students would
-appreciate, we'd love to have you add the requisite profile files and
-instructions to ide_profiles/. For example if you wanted to add a VS Code
-profile, you'd add:
-
-* /ide_profiles/vscode/.vscode
-* /ide_profiles/vscode/README.md
-
-The README should explain what the profile does, how to take advantage of it,
-and how to install it.
-
-Regardless of the IDE used, every submitted project must
-still be compilable with cmake and make.

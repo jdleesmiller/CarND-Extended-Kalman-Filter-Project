@@ -4,9 +4,6 @@
 #include <iostream>
 
 using namespace std;
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
-using std::vector;
 
 // Tolerance for avoiding division by zero.
 const double EPSILON = 1e-6;
@@ -30,9 +27,8 @@ FusionEKF::Radar::Radar(FusionEKF::Filter &filter) : Filter::Sensor<3>(filter) {
     0, 0.0009, 0,
     0, 0, 0.09;
 
-  // Approximate measurement matrix:
-  // approximations
-  // so just set it to zero (i.e. ignore measurements).
+  // Approximate measurement matrix: will be reinitialized later, but zero it
+  // for safety.
   Hj_ = MeasurementStateMatrix::Zero();
 }
 
@@ -114,7 +110,7 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
   Eigen::Vector3d h;
   h << rho, phi, rho_dot;
 
-  // Calculate the linearized projection H for calculating the Kalman gain and
+  // Calculate the linearized projection Hj for calculating the Kalman gain and
   // updating the covariance. (See course notes.)
   double hp = px * px + py * py;
   double dp = sqrt(hp);
@@ -210,15 +206,15 @@ void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
   F_(0, 2) = dt;
   F_(1, 3) = dt;
 
-	// 2. Set the process covariance matrix Q. (See course notes.)
-	double dt2 = dt * dt;
-	double dt3 = dt2 * dt / 2.0f;
-	double dt4 = dt2 * dt2 / 4.0f;
-	Q_ <<
-	  dt4 * NOISE_AX,              0, dt3 * NOISE_AX,              0,
-	               0, dt4 * NOISE_AY,              0, dt3 * NOISE_AY,
-	  dt3 * NOISE_AX,              0, dt2 * NOISE_AX,              0,
-	               0, dt3 * NOISE_AY,              0, dt2 * NOISE_AY;
+  // 2. Set the process covariance matrix Q. (See course notes.)
+  double dt2 = dt * dt;
+  double dt3 = dt2 * dt / 2.0f;
+  double dt4 = dt2 * dt2 / 4.0f;
+  Q_ <<
+    dt4 * NOISE_AX,              0, dt3 * NOISE_AX,              0,
+                 0, dt4 * NOISE_AY,              0, dt3 * NOISE_AY,
+    dt3 * NOISE_AX,              0, dt2 * NOISE_AX,              0,
+                 0, dt3 * NOISE_AY,              0, dt2 * NOISE_AY;
 
   ekf_.Predict(F_, Q_);
 }

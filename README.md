@@ -1,19 +1,10 @@
-# Extended Kalman Filter Project Starter Code
+# Extended Kalman Filter Project
 Self-Driving Car Engineer Nanodegree Program
 
 ---
 ## Notes
 
-RMSEs:
-0.0651649
-0.0605378
-  0.54319
- 0.544191
-
-0.185496
-0.190302
-0.476754
-0.804469
+I made a few changes after getting the original code working, as detailed below.
 
 ### Avoid explicitly inverting S to find the Kalman gain
 
@@ -85,142 +76,20 @@ Compared to the original RMSEs with hard coded uncertainties, these changes to t
 The final RMSEs for dataset 1 (which has a radar measurement as its first measurement):
 
 ```
-final RMSE(px): 0.0651649 -> 0.0651488
-final RMSE(py): 0.0605378 -> 0.0605785
-final RMSE(vx): 0.54319   -> 0.542907
-final RMSE(vy): 0.544191  -> 0.544308
+final RMSE(px): 0.0651649 -> 0.0651493
+final RMSE(py): 0.0605378 -> 0.0605818
+final RMSE(vx): 0.54319   -> 0.543658
+final RMSE(vy): 0.544191  -> 0.54431
 ```
 
 The final RMSEs for dataset 2 (which has a laser measurement as its first measurement):
 
 ```
-final RMSE(px): 0.185496 -> 0.18548
-final RMSE(py): 0.190302 -> 0.190298
-final RMSE(vx): 0.476754 -> 0.476705
-final RMSE(vy): 0.804469 -> 0.805013
+final RMSE(px): 0.185496 -> 0.185514
+final RMSE(py): 0.190302 -> 0.190295
+final RMSE(vx): 0.476754 -> 0.475961
+final RMSE(vy): 0.804469 -> 0.805237
 ```
-
-DS1 For INITIAL_VELOCITY_VARIANCE = 1000, initial pos var 1:
-k = 3 Accuracy - RMSE:
- 0.0697908
-0.00583515
-   2.04889
-  0.121476
-final Accuracy - RMSE:
-  0.0651649
-  0.0605378
-    0.54319
-   0.544191
-
-DS2 For INITIAL_VELOCITY_VARIANCE = 1000, initial pos var 1:
-k = 3 Accuracy - RMSE:
-0.358488
-0.096728
-0.320971
-0.144528
-final Accuracy - RMSE:
-0.185496
-0.190302
-0.476754
-0.804469
-
-DS1 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var measurement:
-k = 3 Accuracy - RMSE:
- 0.0696501
-0.00395462
-   2.08462
- 0.0414731
-
-DS2 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var measurement:
-k = 3 Accuracy - RMSE:
-  0.358892
- 0.0966849
-  0.259522
-  0.145988
-
-----
-DS1 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var 1000, bayesian, k = 5:
- 0.0692893
-0.00404243
-  0.715523
- 0.0685359
-
-DS1 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var measurement, k = 5:
-Accuracy - RMSE:
-   0.059413
- 0.00330218
-     1.7481
-  0.0338688
-
-DS1 For INITIAL_VELOCITY_VARIANCE = 1000, initial pos var 1, k = 5:
-   Accuracy - RMSE:
-    0.0602483
-   0.00489421
-      1.71917
-    0.0992289
-
-DS1 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var measurement, final:
-Accuracy - RMSE:
-  0.0651493
-  0.0605818
-   0.543658
-    0.54431
-
-DS2 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var measurement, k = 5:
-    Accuracy - RMSE:
-    0.360843
-    0.172908
-    0.218933
-    0.223397
-
-DS2 For INITIAL_VELOCITY_VARIANCE = 25, initial pos var measurement, final:
-    Accuracy - RMSE:
-    0.185514
-    0.190295
-    0.475961
-    0.805237
-
-EKF:
-x_ =
-   8.46292
-  0.243462
-  -3.03882
--0.0874212
-P_ =
-  0.0899781 0.000732618           0           0
-0.000732618   0.0645329           0           0
-          0           0    0.916839    -28.7418
-          0           0    -28.7418     999.173
-x_ =
-  8.42075
-  0.25069
- -3.03738
-0.0771985
-P_ =
-  0.0180131 -0.00012345  0.00136897  -0.0124719
--0.00012345   0.0223007  -0.0124719    0.434541
- 0.00136897  -0.0124719     0.13999   -0.963886
- -0.0124719    0.434541   -0.963886     33.6176
-x_ =
- 8.39885
-0.272418
--1.22912
-0.429649
-P_ =
-   0.0151485 -0.000870345   0.00296875   -0.0185505
--0.000870345    0.0436305   -0.0189225     0.615603
-  0.00296875   -0.0189225    0.0654823    -0.378722
-  -0.0185505     0.615603    -0.378722      12.4326
-x_ =
-  8.38628
- 0.258033
- -1.20127
-0.0915684
-P_ =
-  0.00919094 -0.000309438   0.00350786  -0.00515368
--0.000309438    0.0193074  -0.00528129      0.17522
-  0.00350786  -0.00528129    0.0780803   -0.0821679
- -0.00515368      0.17522   -0.0821679      2.80159
 
 ## Dependencies
 

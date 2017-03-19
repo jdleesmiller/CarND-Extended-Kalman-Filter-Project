@@ -13,7 +13,7 @@ const double EPSILON = 1e-6;
 
 // We don't infer anything about speed when initializing, so the variance is
 // large.
-const double INITIAL_VELOCITY_VARIANCE = 1000;
+const double INITIAL_VELOCITY_VARIANCE = 25;
 
 // Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
 const double NOISE_AX = 9;

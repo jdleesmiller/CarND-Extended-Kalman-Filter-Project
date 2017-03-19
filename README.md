@@ -17,9 +17,29 @@ RMSEs:
 
 ### Avoid explicitly inverting S to find the Kalman gain
 
-Instead, use LU solve. This should be more numerically stable.
-Interestingly, it also seems to improve performance by 5%-10% on dataset 1,
-even though Eigen has formulae for inversion of 2x2 and 3x3 matrices.
+It also seems to improve performance by 5%-10% on dataset 1, even though the
+matrices are very small.
+
+### Use fixed-size matrix types
+
+Eigen provides both fixed and dynamic-sized matrices; fixed size matrices
+provide more compile-time correctness checking and should in principle be
+faster by allowing the compiler to calculate more at compile time.
+
+Refactoring to use fixed sized matrices turned out to require some fairly large
+changes, because it prevented me from using the technique of switching out the H
+and R matrices in the filter depending on which sensor measurement we're using.
+
+Instead, it required extracting the update step into two separate (templated)
+Sensor classes, each with H and R matrices of the appropriate size. It also
+required moving the Jacobian calculation out of Tools and into the Radar Sensor
+class.
+
+The performance benefits of doing this turned out to be pretty small: about
+another 5% on dataset 1.
+
+However, architecturally, it seems much clearer, and (subjectively) it cleaned
+up the code a lot.
 
 ## Dependencies
 

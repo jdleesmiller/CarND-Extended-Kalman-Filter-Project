@@ -7,11 +7,11 @@ Self-Driving Car Engineer Nanodegree Program
 
 ### Dataset 1
 
-![output/output-1.png](Output for dataset 1)
+![data/output-1.png](Output for dataset 1)
 
 ### Dataset 2
 
-![output/output-2.png](Output for dataset 1)
+![data/output-2.png](Output for dataset 1)
 
 ## Notes
 
@@ -119,7 +119,7 @@ final RMSE(vy): 0.804469 -> 0.805237
 
 1. Clone this repo.
 2. Make a build directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make` 
+3. Compile: `cmake .. && make`
    * On windows, you may need to run: `cmake .. -G "Unix Makefiles" && make`
 4. Run it: `./ExtendedKF path/to/input.txt path/to/output.txt`. You can find
    some sample inputs in 'data/'.

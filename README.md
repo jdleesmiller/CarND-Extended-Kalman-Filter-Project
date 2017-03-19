@@ -7,11 +7,11 @@ Self-Driving Car Engineer Nanodegree Program
 
 ### Dataset 1
 
-![data/output-1.png](Output for dataset 1)
+![Output for dataset 1](data/output-1.png)
 
 ### Dataset 2
 
-![data/output-2.png](Output for dataset 1)
+![Output for dataset 1](data/output-2.png)
 
 ## Notes
 

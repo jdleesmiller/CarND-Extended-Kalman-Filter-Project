@@ -19,6 +19,10 @@ const double INITIAL_VELOCITY_VARIANCE = 25;
 const double NOISE_AX = 9;
 const double NOISE_AY = 9;
 
+//
+// Radar Sensor
+//
+
 FusionEKF::Radar::Radar(FusionEKF::Filter &filter) : Filter::Sensor<3>(filter) {
   // Measurement covariance matrix:
   R_ <<
@@ -41,6 +45,36 @@ void FusionEKF::Radar::Initialize(const MeasurementVector &z) {
   double px = rho * cos(phi);
   double py = rho * sin(phi);
 
+  // In addition to the position, we can also obtain an estimate of the variance
+  // due to measurement error in the radar sensor. Let's take the variance of px
+  // as an example; the variance for py is computed similarly.
+  //
+  // We need to propagate error through a product, rho * cos(phi), and a cosine.
+  // Fortunately, Wikipedia tells us exactly how to do this:
+  // https://en.wikipedia.org/wiki/Propagation_of_uncertainty#Example_formulas
+  // (But note that all of these rules are approximate; they hold only when
+  // the measurement error is small relative to the value being measured.)
+  //
+  // The radar R_ matrix is diagonal, which tells us that measurements of rho
+  // and phi are uncorrelated. The formula for propagating error through the
+  // product AB for normal random variables A and B therefore simplifies to:
+  //
+  // Var(AB) = Var(A) B^2 + Var(B) A^2
+  //
+  // The rule for cos(C) for normal random variable C is:
+  //
+  // Var(cos(C)) = Var(C) sin^2(C)
+  //
+  // Combining the above, we obtain
+  //
+  // Var(rho cos(phi))
+  //   = Var(rho) cos^2(phi) + Var(cos(phi)) rho^2
+  //   =                 ... + Var(phi) sin^2(phi) rho^2
+  //   =                 ... + Var(phi) (py)^2
+  //
+  // Note: it turns out is possible to obtain an exact expression for
+  // Var(cos(phi)): http://nbviewer.jupyter.org/gist/dougalsutherland/8513749
+  // so we could try that if this approximation causes problems.
   double cos2phi = cos(phi) * cos(phi);
   double sin2phi = sin(phi) * sin(phi);
   double var_px = var_rho * cos2phi + var_phi * py * py;
@@ -69,6 +103,7 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
   double vy = x(3);
 
   // Project the current state into measurement space using the nonlinear 'h'.
+  // (See course notes.)
   double phi = atan2(py, px);
   double rho = sqrt(px*px + py*py);
   // Check division by zero: ignore the measurement.
@@ -80,7 +115,7 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
   h << rho, phi, rho_dot;
 
   // Calculate the linearized projection H for calculating the Kalman gain and
-  // updating the covariance.
+  // updating the covariance. (See course notes.)
   double hp = px * px + py * py;
   double dp = sqrt(hp);
   double p32 = dp * hp;
@@ -96,6 +131,10 @@ void FusionEKF::Radar::Update(const MeasurementVector &z) {
 
   FusionEKF::Filter::Sensor<3>::UpdateEKF(z, h, Hj_, R_);
 }
+
+//
+// Laser Sensor
+//
 
 FusionEKF::Laser::Laser(FusionEKF::Filter &filter) : Filter::Sensor<2>(filter) {
   // Measurement covariance matrix:
@@ -128,6 +167,10 @@ void FusionEKF::Laser::Update(const MeasurementVector &z) {
   Filter::Sensor<2>::Update(z, H_, R_);
 }
 
+//
+// Main Fusion Filter
+//
+
 /*
  * Constructor.
  */
@@ -145,10 +188,6 @@ FusionEKF::FusionEKF() :
 FusionEKF::~FusionEKF() {}
 
 void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
-  /**
-    * Initialize the state ekf_.x_ with the first measurement.
-    * Create the covariance matrix.
-  */
   switch (measurement_pack.sensor_type_) {
     case MeasurementPackage::RADAR:
       radar_.Initialize(measurement_pack.raw_measurements_);
@@ -164,17 +203,14 @@ void FusionEKF::Initialize(const MeasurementPackage &measurement_pack) {
 }
 
 void FusionEKF::Predict(const MeasurementPackage &measurement_pack) {
-  /**
-   * Update the state transition matrix F according to the new elapsed time.
-   */
   // Get elapsed time in seconds (from microseconds).
   double dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1e6;
 
-  //1. Modify the F matrix so that the time is integrated
+  // 1. Modify the F matrix so that the time is integrated
   F_(0, 2) = dt;
   F_(1, 3) = dt;
 
-	//2. Set the process covariance matrix Q
+	// 2. Set the process covariance matrix Q. (See course notes.)
 	double dt2 = dt * dt;
 	double dt3 = dt2 * dt / 2.0f;
 	double dt4 = dt2 * dt2 / 4.0f;

@@ -9,6 +9,10 @@
 #include "kalman_filter.h"
 #include "tools.h"
 
+/**
+ * Sensor-fusing Extended Kalman Filter for pedestrian tracking with laser
+ * (LIDAR) and radar data.
+ */
 class FusionEKF {
 public:
   /**
@@ -36,6 +40,15 @@ public:
 private:
   typedef KalmanFilter<4> Filter;
 
+  /**
+   * The radar sensor: handles the nonlinear measurement function and Jacobian
+   * calculation for updating the filter. If the first measurement is a radar
+   * measurement, this class also handles initializing the filter using that
+   * first radar measurement.
+   *
+   * The radar returns a three-dimensional measurement vector: range (rho),
+   * angle (phi) and radial speed (rho_dot).
+   */
   struct Radar : public Filter::Sensor<3>
   {
     explicit Radar(Filter &filter);
@@ -52,6 +65,14 @@ private:
     MeasurementStateMatrix Hj_;
   };
 
+  /**
+   * The laser sensor: much simpler than the Radar sensor, because the
+   * measurement function is linear. If the first measurement is a laser
+   * measurement, this class also handles initializing the filter using that
+   * first laser measurement.
+   *
+   * The laser returns a two-dimensional measurement vector: x and y position.
+   */
   struct Laser : public Filter::Sensor<2>
   {
     explicit Laser(Filter &filter);
@@ -74,6 +95,9 @@ private:
   // previous timestamp
   long previous_timestamp_;
 
+  // We'll have a single Filter object, and it will be updated by the two
+  // Sensor objects, Radar and Laser, which represent our two sensors to be
+  // fused.
   Filter ekf_;
   Radar radar_;
   Laser laser_;

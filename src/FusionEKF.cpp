@@ -11,6 +11,10 @@ using std::vector;
 // Tolerance for avoiding division by zero.
 const double EPSILON = 1e-6;
 
+// We don't infer anything about speed when initializing, so the variance is
+// large.
+const double INITIAL_VELOCITY_VARIANCE = 1000;
+
 // Use noise_ax = 9 and noise_ay = 9 for your Q matrix.
 const double NOISE_AX = 9;
 const double NOISE_AY = 9;
@@ -31,20 +35,27 @@ FusionEKF::Radar::Radar(FusionEKF::Filter &filter) : Filter::Sensor<3>(filter) {
 void FusionEKF::Radar::Initialize(const MeasurementVector &z) {
   double rho = z(0);
   double phi = z(1);
-  // double rho_dot = z(2); TODO: it seems like we should be able to use this...
+  double var_rho = R_(0, 0);
+  double var_phi = R_(1, 1);
 
   double px = rho * cos(phi);
   double py = rho * sin(phi);
+
+  double cos2phi = cos(phi) * cos(phi);
+  double sin2phi = sin(phi) * sin(phi);
+  double var_px = var_rho * cos2phi + var_phi * py * py;
+  double var_py = var_rho * sin2phi + var_phi * px * px;
 
   Filter::StateVector x;
   x << px, py, 0, 0;
 
   Filter::StateMatrix P;
+  double var_v = INITIAL_VELOCITY_VARIANCE;
   P <<
-        1,     0,    0,    0,
-        0,     1,    0,    0,
-        0,     0, 1000,    0,
-        0,     0,    0, 1000;
+        var_px,      0,     0,     0,
+             0, var_py,     0,     0,
+             0,      0, var_v,     0,
+             0,      0,     0, var_v;
 
   filter_.Initialize(x, P);
 }
@@ -103,13 +114,12 @@ void FusionEKF::Laser::Initialize(const MeasurementVector &z) {
   x << z(0), z(1), 0, 0;
 
   Filter::StateMatrix P;
+  double var_v = INITIAL_VELOCITY_VARIANCE;
   P <<
-    // R_(0),     0,    0,    0,
-    //     0, R_(1),    0,    0,
-        1,     0,    0,    0,
-        0,     1,    0,    0,
-        0,     0, 1000,    0,
-        0,     0,    0, 1000;
+    R_(0),     0,     0,     0,
+        0, R_(1),     0,     0,
+        0,     0, var_v,     0,
+        0,     0,     0, var_v;
 
   filter_.Initialize(x, P);
 }

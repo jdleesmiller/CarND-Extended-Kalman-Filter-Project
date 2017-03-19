@@ -41,6 +41,50 @@ another 5% on dataset 1.
 However, architecturally, it seems much clearer, and (subjectively) it cleaned
 up the code a lot.
 
+### Make better use of first measurement
+
+In the lecture, we hardcoded the initial position uncertainties at 1 and the
+initial velocity uncertainties at 1000.
+
+#### When the first measurement is from the laser
+
+For the initial state position uncertainties, it seems more principled to use
+the measurement uncertainty matrix (`R_laser`).
+
+This change had small and mixed effects on the the final RMSEs for dataset 2
+(which has a laser measurement as its first measurement):
+
+```
+RMSE(px): 0.185496 -> 0.18548
+RMSE(py): 0.190302 -> 0.190298
+RMSE(vx): 0.476754 -> 0.476705
+RMSE(vy): 0.804469 -> 0.805013
+```
+
+#### When the first measurement is from the radar
+
+For the initial position uncertainties, we can approximate the uncertainty
+in the inferred `px` and `py` positions based on the uncertainties in the `rho`
+and `phi` measurements by using the usual approximations for
+[propagation of uncertainty](https://en.wikipedia.org/wiki/Propagation_of_uncertainty)
+through a product and the cosine and sine functions.
+
+For the initial velocity uncertainties, we do have get some information from
+the radar about the initial speed, but it is only the speed in the radial
+direction. I made some progress on inverting `h` under a prior distribution
+on the velocities, but it was quite complicated and made almost no difference,
+so I just left the velocity uncertainties at 1000.
+
+This change had small and mixed effects on the the final RMSEs for dataset 1
+(which has a radar measurement as its first measurement):
+
+```
+RMSE(px): 0.0651649 -> 0.0651488
+RMSE(py): 0.0605378 -> 0.0605785
+RMSE(vx): 0.54319   -> 0.542907
+RMSE(vy): 0.544191  -> 0.544308
+```
+
 ## Dependencies
 
 * cmake >= 3.5
